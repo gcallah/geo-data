@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# file too big
+raw-data/CensusTracts_2022.csv
+
 # virtual env
 demo-repo4-venv
 

@@ -1,2 +1,2 @@
 #/bin/bash
-source min-demo-venv/bin/activate
+source geo-data-venv/bin/activate
