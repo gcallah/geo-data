@@ -2,12 +2,10 @@ import pandas as pd
 import os
 from rapidfuzz import process, fuzz
 
-# === Config ===
 CSV_FOLDER = "./raw-data"
 FIPS_FILE = "./raw-data/state_and_county_fips_master.csv"
 
 
-# === Load and normalize FIPS data ===
 fips_df = pd.read_csv(FIPS_FILE, dtype=str)
 fips_df.columns = [col.strip().lower().replace(" ", "_") for col in fips_df.columns]
 fips_df['state_code'] = fips_df['state'].str.upper()
@@ -16,11 +14,9 @@ fips_df['clean_name'] = fips_df['county_name'].str.lower().replace(
     [" county", " borough", " census area", " municipality", " city and borough"], "", regex=True
 )
 
-# === Normalize helper ===
 def normalize(name):
     return name.lower().strip().replace(" county", "").replace(" borough", "").replace(" census area", "").replace(" municipality", "").replace(" city and borough", "")
 
-# === Matching function ===
 def fuzzy_match(state_code, county_name):
     county_clean = normalize(county_name)
     subset = fips_df[fips_df['state_code'] == state_code]
@@ -31,7 +27,6 @@ def fuzzy_match(state_code, county_name):
         return True
     return False
 
-# === Run match check ===
 unmatched = []
 
 for file in os.listdir(CSV_FOLDER):
@@ -51,8 +46,6 @@ for file in os.listdir(CSV_FOLDER):
         if not fuzzy_match(state_code, county):
             unmatched.append((state_code, county))
 
-# === Report ===
-print(f"\n=== SUMMARY ===")
-print(f"🔴 Unmatched counties: {len(unmatched)}")
-for state_code, county in unmatched[:15]:  # Show a sample
-    print(f"❌ {state_code}: {county}")
+print(f" Unmatched counties: {len(unmatched)}")
+for state_code, county in unmatched[:15]: 
+    print(f"{state_code}: {county}")
