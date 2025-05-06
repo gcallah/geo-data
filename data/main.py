@@ -9,21 +9,20 @@ app = FastAPI()
 def read_states():
     return get_all_states()
 
-@app.get("/states/{state_code}")                  ## Object ID is not iterable error
+@app.get("/states/{state_code}")
 def read_state_by_code(state_code: str):
-    from data.states import get_state_by_query
-
     try:
         print("Looking up:", state_code)
         result = get_state_by_query({"state_code": state_code.upper()})
         print("RESULT:", result)
         if result is None:
             return {"error": f"No state found for {state_code}"}
+        result.pop("_id", None)  #REMOVE ObjectId
         return result
-
     except Exception as e:
         print("ERROR OCCURRED:", str(e))
         return {"error": "Internal error", "details": str(e)}
+
 
 @app.get("/counties")
 def read_counties(
@@ -64,4 +63,8 @@ def read_counties(
 
 @app.get("/counties/{county_name}")
 def read_county_by_name(county_name: str):
-    return get_county_by_query({"county": county_name})
+    result = get_county_by_query({"county": county_name})
+    if result:
+        result.pop("_id", None)  #REMOVE ObjectId
+    return result
+
