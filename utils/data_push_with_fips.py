@@ -5,12 +5,12 @@ from rapidfuzz import process, fuzz
 import urllib.parse
 import re
 
-username = "pb2882"
-raw_password = "Chitra@2002"
+username = "pb2882" 
+raw_password = "Chitra@2002"  ##Password
 encoded_password = urllib.parse.quote_plus(raw_password)
 
 MONGO_URI = f"mongodb+srv://{username}:{encoded_password}@cluster0.xjc8gra.mongodb.net/county_data?retryWrites=true&w=majority"
-DATABASE_NAME = "county_data"
+DATABASE_NAME = "US_census_county_data"
 CSV_FOLDER = "./raw-data"
 FIPS_FILE = "./raw-data/state_and_county_fips_master.csv"
 
@@ -19,9 +19,9 @@ db = client[DATABASE_NAME]
 
 # Fallback for not found
 manual_fips = {
-    ("AK", "Chugach Census Area"): "02063",
-    ("AK", "Copper River Census Area"): "02066",
-    ("AK", "Kusilvak Census Area"): "02158",
+    ("AK", "Chugach Census Area"): "2063",
+    ("AK", "Copper River Census Area"): "2066",
+    ("AK", "Kusilvak Census Area"): "2158",
     ("NM", "Doña Ana"): "35013",
     ("NM", "Los Alamos[v]"): "35028",
     ("SD", "Oglala Lakota"): "46113",
@@ -44,7 +44,8 @@ fips_df['clean_name'] = fips_df['county_name'].apply(normalize)
 fips_df['fips_code'] = fips_df['fips'].str.strip()  
 def get_fips_code(state_code, county_name):
     if (state_code, county_name) in manual_fips:
-        return manual_fips[(state_code, county_name)]
+        return manual_fips[(state_code, county_name)].zfill(5)
+
 
     county_clean = normalize(county_name)
     subset = fips_df[fips_df['state_code'] == state_code]
@@ -57,7 +58,8 @@ def get_fips_code(state_code, county_name):
         match = result[0]
         row = subset[subset['clean_name'] == match]
         if not row.empty:
-            return row.iloc[0]['fips_code']  
+            return row.iloc[0]['fips_code'].zfill(5)
+
     return None
 
 
