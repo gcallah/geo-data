@@ -21,7 +21,7 @@ def read_state_by_code(state_code: str):
         result.pop("_id", None)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/counties")
 def read_counties(
@@ -38,7 +38,6 @@ def read_counties(
 ):
     counties = get_all_counties()
 
-    # filters
     if state_code:
         counties = [c for c in counties if c.get("state_code") == state_code.upper()]
     if min_population is not None:
@@ -72,5 +71,6 @@ def read_county_by_name(county_name: str):
         raise HTTPException(status_code=404, detail=f"County '{county_name}' not found")
     result.pop("_id", None)
     return result
+
 
 
