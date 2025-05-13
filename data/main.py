@@ -1,30 +1,46 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from typing import Optional
 from data.counties import get_all_counties, get_county_by_query
 from data.states import get_all_states, get_state_by_query
 
 app = FastAPI()
 
+
 @app.get("/states")
-def read_states():
+def read_states(request: Request):
     states = get_all_states()
     if not states:
         raise HTTPException(status_code=404, detail="No states found")
+
+    origin = str(request.base_url).rstrip("/")
+
+    for state in states:
+        code = state.get("state_code", "")
+        state["county_link"] = f"{origin}/counties?state_code={code}"
+        state.pop("_id", None)
+
     return states
 
+
 @app.get("/states/{state_code}")
-def read_state_by_code(state_code: str):
+def read_state_by_code(state_code: str, request: Request):
     try:
         result = get_state_by_query({"state_code": state_code.upper()})
         if result is None:
             raise HTTPException(status_code=404, detail=f"No state found for {state_code}")
         result.pop("_id", None)
+
+        origin = str(request.base_url).rstrip("/")
+        result["county_link"] = f"{origin}/counties?state_code={state_code.upper()}"
+
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=404, detail="Internal server error")
+
 
 @app.get("/counties")
 def read_counties(
+    request: Request,
     state_code: Optional[str] = Query(None),
     min_population: Optional[int] = Query(None),
     max_population: Optional[int] = Query(None),
@@ -62,15 +78,28 @@ def read_counties(
     if not filtered:
         raise HTTPException(status_code=404, detail="No counties matched the filters")
 
+    origin = str(request.base_url).rstrip("/")
+    for county in filtered:
+        name = county.get("county", "").replace(" ", "%20")
+        county["county_link"] = f"{origin}/counties/{name}"
+        county.pop("_id", None)
+
     return filtered
 
+
 @app.get("/counties/{county_name}")
-def read_county_by_name(county_name: str):
+def read_county_by_name(county_name: str, request: Request):
     result = get_county_by_query({"county": county_name})
     if not result:
         raise HTTPException(status_code=404, detail=f"County '{county_name}' not found")
     result.pop("_id", None)
+
+    origin = str(request.base_url).rstrip("/")
+    name = result.get("county", "").replace(" ", "%20")
+    result["county_link"] = f"{origin}/counties/{name}"
+
     return result
+
 
 
 
