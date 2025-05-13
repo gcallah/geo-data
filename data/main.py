@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from typing import Optional
 from data.counties import get_all_counties, get_county_by_query
 from data.states import get_all_states, get_state_by_query
@@ -7,22 +7,21 @@ app = FastAPI()
 
 @app.get("/states")
 def read_states():
-    return get_all_states()
+    states = get_all_states()
+    if not states:
+        raise HTTPException(status_code=404, detail="No states found")
+    return states
 
 @app.get("/states/{state_code}")
 def read_state_by_code(state_code: str):
     try:
-        print("Looking up:", state_code)
         result = get_state_by_query({"state_code": state_code.upper()})
-        print("RESULT:", result)
         if result is None:
-            return {"error": f"No state found for {state_code}"}
-        result.pop("_id", None)  #REMOVE ObjectId
+            raise HTTPException(status_code=404, detail=f"No state found for {state_code}")
+        result.pop("_id", None)
         return result
     except Exception as e:
-        print("ERROR OCCURRED:", str(e))
-        return {"error": "Internal error", "details": str(e)}
-
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/counties")
 def read_counties(
@@ -39,7 +38,7 @@ def read_counties(
 ):
     counties = get_all_counties()
 
-    #filters
+    # filters
     if state_code:
         counties = [c for c in counties if c.get("state_code") == state_code.upper()]
     if min_population is not None:
@@ -59,12 +58,19 @@ def read_counties(
     if sort_by in {"population", "area_sq_miles"}:
         counties.sort(key=lambda x: x.get(sort_by, 0), reverse=descending)
 
-    return counties[offset:offset + limit]
+    filtered = counties[offset:offset + limit]
+
+    if not filtered:
+        raise HTTPException(status_code=404, detail="No counties matched the filters")
+
+    return filtered
 
 @app.get("/counties/{county_name}")
 def read_county_by_name(county_name: str):
     result = get_county_by_query({"county": county_name})
-    if result:
-        result.pop("_id", None)  #REMOVE ObjectId
+    if not result:
+        raise HTTPException(status_code=404, detail=f"County '{county_name}' not found")
+    result.pop("_id", None)
     return result
+
 
